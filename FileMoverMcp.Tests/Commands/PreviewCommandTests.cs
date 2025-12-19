@@ -2,80 +2,79 @@ using FileMoverMcp.Core.Commands;
 using FileMoverMcp.Core.Interfaces;
 using FileMoverMcp.Core.Models;
 using Moq;
-using Xunit;
 
-namespace FileMoverMcp.Tests.Commands;
-
-public class PreviewCommandTests
+namespace FileMoverMcp.Tests.Commands
 {
-    private readonly Mock<ISessionManager> _mockSessionManager;
-
-    public PreviewCommandTests()
+    public class PreviewCommandTests
     {
-        _mockSessionManager = new Mock<ISessionManager>();
-    }
+        private readonly Mock<ISessionManager> _mockSessionManager;
 
-    [Fact]
-    public async Task ExecuteAsync_WhenNoSession_ReturnsFailureResult()
-    {
-        // Arrange
-        _mockSessionManager
-            .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Session?)null);
+        public PreviewCommandTests()
+        {
+            _mockSessionManager = new Mock<ISessionManager>();
+        }
 
-        PreviewCommand command = new PreviewCommand(_mockSessionManager.Object);
+        [Fact]
+        public async Task ExecuteAsync_WhenNoSession_ReturnsFailureResult()
+        {
+            // Arrange
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Session?)null);
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            PreviewCommand command = new PreviewCommand(_mockSessionManager.Object);
 
-        // Assert
-        Assert.False(result.Success);
-        Assert.Contains("No session initialized", result.Message);
-    }
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
 
-    [Fact]
-    public async Task ExecuteAsync_WhenSessionHasNoMoves_ReturnsSuccessWithNoMoves()
-    {
-        // Arrange
-        Session session = Session.Create("C:\\TestPath");
-        _mockSessionManager
-            .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(session);
+            // Assert
+            Assert.False(result.Success);
+            Assert.Contains("No session initialized", result.Message);
+        }
 
-        PreviewCommand command = new PreviewCommand(_mockSessionManager.Object);
+        [Fact]
+        public async Task ExecuteAsync_WhenSessionHasNoMoves_ReturnsSuccessWithNoMoves()
+        {
+            // Arrange
+            Session session = Session.Create("C:\\TestPath");
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(session);
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            PreviewCommand command = new PreviewCommand(_mockSessionManager.Object);
 
-        // Assert
-        Assert.True(result.Success);
-        Assert.Contains("No moves staged", result.Message);
-    }
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
 
-    [Fact]
-    public async Task ExecuteAsync_WhenSessionHasMoves_ReturnsSuccessWithDetails()
-    {
-        // Arrange
-        Session session = Session.Create("C:\\TestPath");
-        session.StagedMoves.Add(new FileMove("file1.txt", "file2.txt", false));
-        session.StagedMoves.Add(new FileMove("file3.txt", "file4.txt", true));
+            // Assert
+            Assert.True(result.Success);
+            Assert.Contains("No moves staged", result.Message);
+        }
 
-        _mockSessionManager
-            .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(session);
+        [Fact]
+        public async Task ExecuteAsync_WhenSessionHasMoves_ReturnsSuccessWithDetails()
+        {
+            // Arrange
+            Session session = Session.Create("C:\\TestPath");
+            session.StagedMoves.Add(new FileMove("file1.txt", "file2.txt", false));
+            session.StagedMoves.Add(new FileMove("file3.txt", "file4.txt", true));
 
-        PreviewCommand command = new PreviewCommand(_mockSessionManager.Object);
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(session);
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            PreviewCommand command = new PreviewCommand(_mockSessionManager.Object);
 
-        // Assert
-        Assert.True(result.Success);
-        Assert.Contains("2 move(s) staged", result.Message);
-        Assert.NotNull(result.Details);
-        Assert.Contains("file1.txt", result.Details);
-        Assert.Contains("file2.txt", result.Details);
-        Assert.Contains("[OVERWRITE]", result.Details);
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+
+            // Assert
+            Assert.True(result.Success);
+            Assert.Contains("2 move(s) staged", result.Message);
+            Assert.NotNull(result.Details);
+            Assert.Contains("file1.txt", result.Details);
+            Assert.Contains("file2.txt", result.Details);
+            Assert.Contains("[OVERWRITE]", result.Details);
+        }
     }
 }
-

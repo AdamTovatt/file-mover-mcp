@@ -2,149 +2,148 @@ using FileMoverMcp.Core.Commands;
 using FileMoverMcp.Core.Interfaces;
 using FileMoverMcp.Core.Models;
 using Moq;
-using Xunit;
 
-namespace FileMoverMcp.Tests.Commands;
-
-public class MoveCommandTests
+namespace FileMoverMcp.Tests.Commands
 {
-    private readonly Mock<ISessionManager> _mockSessionManager;
-    private readonly Mock<IFileOperationService> _mockFileOperationService;
-
-    public MoveCommandTests()
+    public class MoveCommandTests
     {
-        _mockSessionManager = new Mock<ISessionManager>();
-        _mockFileOperationService = new Mock<IFileOperationService>();
-    }
+        private readonly Mock<ISessionManager> _mockSessionManager;
+        private readonly Mock<IFileOperationService> _mockFileOperationService;
 
-    [Fact]
-    public async Task ExecuteAsync_WhenSuccessful_ReturnsSuccessResult()
-    {
-        // Arrange
-        Session session = Session.Create("C:\\TestPath");
-        _mockSessionManager
-            .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(session);
+        public MoveCommandTests()
+        {
+            _mockSessionManager = new Mock<ISessionManager>();
+            _mockFileOperationService = new Mock<IFileOperationService>();
+        }
 
-        _mockFileOperationService
-            .Setup(x => x.ValidateFileMoveAsync(
-                It.IsAny<FileMove>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ValidationResult(true));
+        [Fact]
+        public async Task ExecuteAsync_WhenSuccessful_ReturnsSuccessResult()
+        {
+            // Arrange
+            Session session = Session.Create("C:\\TestPath");
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(session);
 
-        MoveCommand command = new MoveCommand(
-            _mockSessionManager.Object,
-            _mockFileOperationService.Object,
-            "source.txt",
-            "dest.txt",
-            false);
+            _mockFileOperationService
+                .Setup(x => x.ValidateFileMoveAsync(
+                    It.IsAny<FileMove>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ValidationResult(true));
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            MoveCommand command = new MoveCommand(
+                _mockSessionManager.Object,
+                _mockFileOperationService.Object,
+                "source.txt",
+                "dest.txt",
+                false);
 
-        // Assert
-        Assert.True(result.Success);
-        Assert.Contains("Staged move", result.Message);
-        _mockSessionManager.Verify(
-            x => x.AddFileMoveAsync(It.IsAny<FileMove>(), It.IsAny<CancellationToken>()),
-            Times.Once);
-    }
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
 
-    [Fact]
-    public async Task ExecuteAsync_WhenNoSession_ReturnsFailureResult()
-    {
-        // Arrange
-        _mockSessionManager
-            .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Session?)null);
+            // Assert
+            Assert.True(result.Success);
+            Assert.Contains("Staged move", result.Message);
+            _mockSessionManager.Verify(
+                x => x.AddFileMoveAsync(It.IsAny<FileMove>(), It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
 
-        MoveCommand command = new MoveCommand(
-            _mockSessionManager.Object,
-            _mockFileOperationService.Object,
-            "source.txt",
-            "dest.txt",
-            false);
+        [Fact]
+        public async Task ExecuteAsync_WhenNoSession_ReturnsFailureResult()
+        {
+            // Arrange
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Session?)null);
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            MoveCommand command = new MoveCommand(
+                _mockSessionManager.Object,
+                _mockFileOperationService.Object,
+                "source.txt",
+                "dest.txt",
+                false);
 
-        // Assert
-        Assert.False(result.Success);
-        Assert.Contains("No session initialized", result.Message);
-    }
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
 
-    [Fact]
-    public async Task ExecuteAsync_WhenValidationFails_ReturnsFailureResult()
-    {
-        // Arrange
-        Session session = Session.Create("C:\\TestPath");
-        _mockSessionManager
-            .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(session);
+            // Assert
+            Assert.False(result.Success);
+            Assert.Contains("No session initialized", result.Message);
+        }
 
-        _mockFileOperationService
-            .Setup(x => x.ValidateFileMoveAsync(
-                It.IsAny<FileMove>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ValidationResult(false, "Source file not found"));
+        [Fact]
+        public async Task ExecuteAsync_WhenValidationFails_ReturnsFailureResult()
+        {
+            // Arrange
+            Session session = Session.Create("C:\\TestPath");
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(session);
 
-        MoveCommand command = new MoveCommand(
-            _mockSessionManager.Object,
-            _mockFileOperationService.Object,
-            "nonexistent.txt",
-            "dest.txt",
-            false);
+            _mockFileOperationService
+                .Setup(x => x.ValidateFileMoveAsync(
+                    It.IsAny<FileMove>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ValidationResult(false, "Source file not found"));
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            MoveCommand command = new MoveCommand(
+                _mockSessionManager.Object,
+                _mockFileOperationService.Object,
+                "nonexistent.txt",
+                "dest.txt",
+                false);
 
-        // Assert
-        Assert.False(result.Success);
-        Assert.Contains("Source file not found", result.Message);
-        _mockSessionManager.Verify(
-            x => x.AddFileMoveAsync(It.IsAny<FileMove>(), It.IsAny<CancellationToken>()),
-            Times.Never);
-    }
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
 
-    [Fact]
-    public async Task ExecuteAsync_WithOverwriteFlag_PassesOverwriteToFileMove()
-    {
-        // Arrange
-        Session session = Session.Create("C:\\TestPath");
-        FileMove? capturedFileMove = null;
+            // Assert
+            Assert.False(result.Success);
+            Assert.Contains("Source file not found", result.Message);
+            _mockSessionManager.Verify(
+                x => x.AddFileMoveAsync(It.IsAny<FileMove>(), It.IsAny<CancellationToken>()),
+                Times.Never);
+        }
 
-        _mockSessionManager
-            .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(session);
+        [Fact]
+        public async Task ExecuteAsync_WithOverwriteFlag_PassesOverwriteToFileMove()
+        {
+            // Arrange
+            Session session = Session.Create("C:\\TestPath");
+            FileMove? capturedFileMove = null;
 
-        _mockFileOperationService
-            .Setup(x => x.ValidateFileMoveAsync(
-                It.IsAny<FileMove>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new ValidationResult(true));
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(session);
 
-        _mockSessionManager
-            .Setup(x => x.AddFileMoveAsync(It.IsAny<FileMove>(), It.IsAny<CancellationToken>()))
-            .Callback<FileMove, CancellationToken>((fm, ct) => capturedFileMove = fm)
-            .Returns(Task.CompletedTask);
+            _mockFileOperationService
+                .Setup(x => x.ValidateFileMoveAsync(
+                    It.IsAny<FileMove>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .ReturnsAsync(new ValidationResult(true));
 
-        MoveCommand command = new MoveCommand(
-            _mockSessionManager.Object,
-            _mockFileOperationService.Object,
-            "source.txt",
-            "dest.txt",
-            true);
+            _mockSessionManager
+                .Setup(x => x.AddFileMoveAsync(It.IsAny<FileMove>(), It.IsAny<CancellationToken>()))
+                .Callback<FileMove, CancellationToken>((fm, ct) => capturedFileMove = fm)
+                .Returns(Task.CompletedTask);
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            MoveCommand command = new MoveCommand(
+                _mockSessionManager.Object,
+                _mockFileOperationService.Object,
+                "source.txt",
+                "dest.txt",
+                true);
 
-        // Assert
-        Assert.True(result.Success);
-        Assert.NotNull(capturedFileMove);
-        Assert.True(capturedFileMove.Overwrite);
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+
+            // Assert
+            Assert.True(result.Success);
+            Assert.NotNull(capturedFileMove);
+            Assert.True(capturedFileMove.Overwrite);
+        }
     }
 }
-

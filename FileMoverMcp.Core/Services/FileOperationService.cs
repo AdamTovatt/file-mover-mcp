@@ -2,85 +2,85 @@ using EasyReasy.FileStorage;
 using FileMoverMcp.Core.Interfaces;
 using FileMoverMcp.Core.Models;
 
-namespace FileMoverMcp.Core.Services;
-
-/// <summary>
-/// Service for performing file operations using EasyReasy.FileStorage.
-/// </summary>
-public class FileOperationService : IFileOperationService
+namespace FileMoverMcp.Core.Services
 {
-    /// <inheritdoc/>
-    public async Task<ValidationResult> ValidateFileMoveAsync(
-        FileMove fileMove,
-        string basePath,
-        CancellationToken cancellationToken)
+    /// <summary>
+    /// Service for performing file operations using EasyReasy.FileStorage.
+    /// </summary>
+    public class FileOperationService : IFileOperationService
     {
-        IFileSystem fileSystem = new LocalFileSystem(basePath);
-
-        // Check if source file exists
-        bool sourceExists = await fileSystem.FileExistsAsync(fileMove.SourcePath, cancellationToken);
-        if (!sourceExists)
+        /// <inheritdoc/>
+        public async Task<ValidationResult> ValidateFileMoveAsync(
+            FileMove fileMove,
+            string basePath,
+            CancellationToken cancellationToken)
         {
-            return new ValidationResult(false, $"Source file not found: {fileMove.SourcePath}");
+            IFileSystem fileSystem = new LocalFileSystem(basePath);
+
+            // Check if source file exists
+            bool sourceExists = await fileSystem.FileExistsAsync(fileMove.SourcePath, cancellationToken);
+            if (!sourceExists)
+            {
+                return new ValidationResult(false, $"Source file not found: {fileMove.SourcePath}");
+            }
+
+            // Check if destination file exists (conflict check)
+            bool destinationExists = await fileSystem.FileExistsAsync(fileMove.DestinationPath, cancellationToken);
+            if (destinationExists && !fileMove.Overwrite)
+            {
+                return new ValidationResult(
+                    false,
+                    $"Destination exists: {fileMove.DestinationPath}. Use --overwrite flag to replace.");
+            }
+
+            return new ValidationResult(true);
         }
 
-        // Check if destination file exists (conflict check)
-        bool destinationExists = await fileSystem.FileExistsAsync(fileMove.DestinationPath, cancellationToken);
-        if (destinationExists && !fileMove.Overwrite)
+        /// <inheritdoc/>
+        public async Task ExecuteFileMoveAsync(
+            FileMove fileMove,
+            string basePath,
+            CancellationToken cancellationToken)
         {
-            return new ValidationResult(
-                false,
-                $"Destination exists: {fileMove.DestinationPath}. Use --overwrite flag to replace.");
-        }
+            IFileSystem fileSystem = new LocalFileSystem(basePath);
 
-        return new ValidationResult(true);
-    }
+            // Ensure the destination directory exists
+            string? destinationDirectory = Path.GetDirectoryName(fileMove.DestinationPath);
+            if (!string.IsNullOrEmpty(destinationDirectory))
+            {
+                await fileSystem.CreateDirectoryAsync(destinationDirectory, cancellationToken);
+            }
 
-    /// <inheritdoc/>
-    public async Task ExecuteFileMoveAsync(
-        FileMove fileMove,
-        string basePath,
-        CancellationToken cancellationToken)
-    {
-        IFileSystem fileSystem = new LocalFileSystem(basePath);
+            // If destination exists and overwrite is true, delete it first
+            if (fileMove.Overwrite)
+            {
+                bool destinationExists = await fileSystem.FileExistsAsync(
+                    fileMove.DestinationPath,
+                    cancellationToken);
 
-        // Ensure the destination directory exists
-        string? destinationDirectory = Path.GetDirectoryName(fileMove.DestinationPath);
-        if (!string.IsNullOrEmpty(destinationDirectory))
-        {
-            await fileSystem.CreateDirectoryAsync(destinationDirectory, cancellationToken);
-        }
+                if (destinationExists)
+                {
+                    await fileSystem.DeleteFileAsync(fileMove.DestinationPath, cancellationToken);
+                }
+            }
 
-        // If destination exists and overwrite is true, delete it first
-        if (fileMove.Overwrite)
-        {
-            bool destinationExists = await fileSystem.FileExistsAsync(
+            // Copy the file to the destination, then delete the source
+            await fileSystem.CopyFileAsync(
+                fileMove.SourcePath,
                 fileMove.DestinationPath,
                 cancellationToken);
 
-            if (destinationExists)
-            {
-                await fileSystem.DeleteFileAsync(fileMove.DestinationPath, cancellationToken);
-            }
+            await fileSystem.DeleteFileAsync(fileMove.SourcePath, cancellationToken);
         }
 
-        // Copy the file to the destination, then delete the source
-        await fileSystem.CopyFileAsync(
-            fileMove.SourcePath,
-            fileMove.DestinationPath,
-            cancellationToken);
-
-        await fileSystem.DeleteFileAsync(fileMove.SourcePath, cancellationToken);
-    }
-
-    /// <inheritdoc/>
-    public async Task<bool> FileExistsAsync(
-        string path,
-        string basePath,
-        CancellationToken cancellationToken)
-    {
-        IFileSystem fileSystem = new LocalFileSystem(basePath);
-        return await fileSystem.FileExistsAsync(path, cancellationToken);
+        /// <inheritdoc/>
+        public async Task<bool> FileExistsAsync(
+            string path,
+            string basePath,
+            CancellationToken cancellationToken)
+        {
+            IFileSystem fileSystem = new LocalFileSystem(basePath);
+            return await fileSystem.FileExistsAsync(path, cancellationToken);
+        }
     }
 }
-

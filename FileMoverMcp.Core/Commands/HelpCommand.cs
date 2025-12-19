@@ -1,16 +1,16 @@
 using FileMoverMcp.Core.Interfaces;
 
-namespace FileMoverMcp.Core.Commands;
-
-/// <summary>
-/// Command to display help information.
-/// </summary>
-public class HelpCommand : ICommand
+namespace FileMoverMcp.Core.Commands
 {
     /// <summary>
-    /// Gets the help text for the FileMover tool.
+    /// Command to display help information.
     /// </summary>
-    public static string HelpText => @"FileMover - Stage and execute file moves safely
+    public class HelpCommand : ICommand
+    {
+        /// <summary>
+        /// Gets the help text for the FileMover tool.
+        /// </summary>
+        public static string HelpText => @"FileMover - Stage and execute file moves safely
 
 WORKFLOW:
   1. fm init [path]       - Start a new session
@@ -73,13 +73,13 @@ AI AGENT USAGE:
   - fm_cancel()
   - fm_help()
 
-For more information, visit: https://github.com/yourusername/FileMoverMcp
+For more information, visit: https://github.com/AdamTovatt/file-mover-mcp
 ";
 
-    /// <inheritdoc/>
-    public Task<CommandResult> ExecuteAsync(CancellationToken cancellationToken)
-    {
-        return Task.FromResult(new CommandResult(true, HelpText));
+        /// <inheritdoc/>
+        public Task<CommandResult> ExecuteAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(new CommandResult(true, HelpText));
+        }
     }
 }
-

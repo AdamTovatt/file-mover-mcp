@@ -2,79 +2,78 @@ using FileMoverMcp.Core.Commands;
 using FileMoverMcp.Core.Interfaces;
 using FileMoverMcp.Core.Models;
 using Moq;
-using Xunit;
 
-namespace FileMoverMcp.Tests.Commands;
-
-public class InitCommandTests
+namespace FileMoverMcp.Tests.Commands
 {
-    private readonly Mock<ISessionManager> _mockSessionManager;
-
-    public InitCommandTests()
+    public class InitCommandTests
     {
-        _mockSessionManager = new Mock<ISessionManager>();
-    }
+        private readonly Mock<ISessionManager> _mockSessionManager;
 
-    [Fact]
-    public async Task ExecuteAsync_WhenSuccessful_ReturnsSuccessResult()
-    {
-        // Arrange
-        string basePath = "C:\\TestPath";
-        Session session = Session.Create(basePath);
+        public InitCommandTests()
+        {
+            _mockSessionManager = new Mock<ISessionManager>();
+        }
 
-        _mockSessionManager
-            .Setup(x => x.CreateSessionAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync(session);
+        [Fact]
+        public async Task ExecuteAsync_WhenSuccessful_ReturnsSuccessResult()
+        {
+            // Arrange
+            string basePath = "C:\\TestPath";
+            Session session = Session.Create(basePath);
 
-        InitCommand command = new InitCommand(_mockSessionManager.Object, basePath);
+            _mockSessionManager
+                .Setup(x => x.CreateSessionAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ReturnsAsync(session);
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            InitCommand command = new InitCommand(_mockSessionManager.Object, basePath);
 
-        // Assert
-        Assert.True(result.Success);
-        Assert.Contains("Session initialized", result.Message);
-        Assert.Contains(basePath, result.Message);
-    }
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
 
-    [Fact]
-    public async Task ExecuteAsync_WhenSessionExists_ReturnsFailureResult()
-    {
-        // Arrange
-        string basePath = "C:\\TestPath";
-        _mockSessionManager
-            .Setup(x => x.CreateSessionAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new InvalidOperationException("Session already active"));
+            // Assert
+            Assert.True(result.Success);
+            Assert.Contains("Session initialized", result.Message);
+            Assert.Contains(basePath, result.Message);
+        }
 
-        InitCommand command = new InitCommand(_mockSessionManager.Object, basePath);
+        [Fact]
+        public async Task ExecuteAsync_WhenSessionExists_ReturnsFailureResult()
+        {
+            // Arrange
+            string basePath = "C:\\TestPath";
+            _mockSessionManager
+                .Setup(x => x.CreateSessionAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("Session already active"));
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            InitCommand command = new InitCommand(_mockSessionManager.Object, basePath);
 
-        // Assert
-        Assert.False(result.Success);
-        Assert.Contains("Error", result.Message);
-        Assert.Contains("Session already active", result.Message);
-    }
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
 
-    [Fact]
-    public async Task ExecuteAsync_WhenDirectoryNotFound_ReturnsFailureResult()
-    {
-        // Arrange
-        string basePath = "C:\\NonExistent";
-        _mockSessionManager
-            .Setup(x => x.CreateSessionAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new DirectoryNotFoundException("Directory not found"));
+            // Assert
+            Assert.False(result.Success);
+            Assert.Contains("Error", result.Message);
+            Assert.Contains("Session already active", result.Message);
+        }
 
-        InitCommand command = new InitCommand(_mockSessionManager.Object, basePath);
+        [Fact]
+        public async Task ExecuteAsync_WhenDirectoryNotFound_ReturnsFailureResult()
+        {
+            // Arrange
+            string basePath = "C:\\NonExistent";
+            _mockSessionManager
+                .Setup(x => x.CreateSessionAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new DirectoryNotFoundException("Directory not found"));
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            InitCommand command = new InitCommand(_mockSessionManager.Object, basePath);
 
-        // Assert
-        Assert.False(result.Success);
-        Assert.Contains("Error", result.Message);
-        Assert.Contains("Directory not found", result.Message);
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+
+            // Assert
+            Assert.False(result.Success);
+            Assert.Contains("Error", result.Message);
+            Assert.Contains("Directory not found", result.Message);
+        }
     }
 }
-

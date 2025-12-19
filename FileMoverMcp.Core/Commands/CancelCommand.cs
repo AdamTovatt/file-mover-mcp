@@ -1,35 +1,35 @@
 using FileMoverMcp.Core.Interfaces;
 
-namespace FileMoverMcp.Core.Commands;
-
-/// <summary>
-/// Command to cancel the current session and discard all staged moves.
-/// </summary>
-public class CancelCommand : ICommand
+namespace FileMoverMcp.Core.Commands
 {
-    private readonly ISessionManager _sessionManager;
-
     /// <summary>
-    /// Initializes a new instance of the <see cref="CancelCommand"/> class.
+    /// Command to cancel the current session and discard all staged moves.
     /// </summary>
-    /// <param name="sessionManager">The session manager.</param>
-    public CancelCommand(ISessionManager sessionManager)
+    public class CancelCommand : ICommand
     {
-        _sessionManager = sessionManager;
-    }
+        private readonly ISessionManager _sessionManager;
 
-    /// <inheritdoc/>
-    public async Task<CommandResult> ExecuteAsync(CancellationToken cancellationToken)
-    {
-        try
+        /// <summary>
+        /// Initializes a new instance of the <see cref="CancelCommand"/> class.
+        /// </summary>
+        /// <param name="sessionManager">The session manager.</param>
+        public CancelCommand(ISessionManager sessionManager)
         {
-            await _sessionManager.CancelSessionAsync(cancellationToken);
-            return new CommandResult(true, "Session cancelled. All staged moves discarded.");
+            _sessionManager = sessionManager;
         }
-        catch (InvalidOperationException ex)
+
+        /// <inheritdoc/>
+        public async Task<CommandResult> ExecuteAsync(CancellationToken cancellationToken)
         {
-            return new CommandResult(false, "Error: " + ex.Message);
+            try
+            {
+                await _sessionManager.CancelSessionAsync(cancellationToken);
+                return new CommandResult(true, "Session cancelled. All staged moves discarded.");
+            }
+            catch (InvalidOperationException ex)
+            {
+                return new CommandResult(false, "Error: " + ex.Message);
+            }
         }
     }
 }
-

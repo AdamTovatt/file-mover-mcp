@@ -1,44 +1,44 @@
 using FileMoverMcp.Core.Interfaces;
 using FileMoverMcp.Core.Models;
 
-namespace FileMoverMcp.Core.Commands;
-
-/// <summary>
-/// Command to initialize a new file move session.
-/// </summary>
-public class InitCommand : ICommand
+namespace FileMoverMcp.Core.Commands
 {
-    private readonly ISessionManager _sessionManager;
-    private readonly string _basePath;
-
     /// <summary>
-    /// Initializes a new instance of the <see cref="InitCommand"/> class.
+    /// Command to initialize a new file move session.
     /// </summary>
-    /// <param name="sessionManager">The session manager.</param>
-    /// <param name="basePath">The base directory path.</param>
-    public InitCommand(ISessionManager sessionManager, string basePath)
+    public class InitCommand : ICommand
     {
-        _sessionManager = sessionManager;
-        _basePath = basePath;
-    }
+        private readonly ISessionManager _sessionManager;
+        private readonly string _basePath;
 
-    /// <inheritdoc/>
-    public async Task<CommandResult> ExecuteAsync(CancellationToken cancellationToken)
-    {
-        try
+        /// <summary>
+        /// Initializes a new instance of the <see cref="InitCommand"/> class.
+        /// </summary>
+        /// <param name="sessionManager">The session manager.</param>
+        /// <param name="basePath">The base directory path.</param>
+        public InitCommand(ISessionManager sessionManager, string basePath)
         {
-            Session session = await _sessionManager.CreateSessionAsync(_basePath, cancellationToken);
-            string message = $"Session initialized at: {session.BasePath}";
-            return new CommandResult(true, message);
+            _sessionManager = sessionManager;
+            _basePath = basePath;
         }
-        catch (InvalidOperationException ex)
+
+        /// <inheritdoc/>
+        public async Task<CommandResult> ExecuteAsync(CancellationToken cancellationToken)
         {
-            return new CommandResult(false, "Error: " + ex.Message);
-        }
-        catch (DirectoryNotFoundException ex)
-        {
-            return new CommandResult(false, "Error: " + ex.Message);
+            try
+            {
+                Session session = await _sessionManager.CreateSessionAsync(_basePath, cancellationToken);
+                string message = $"Session initialized at: {session.BasePath}";
+                return new CommandResult(true, message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return new CommandResult(false, "Error: " + ex.Message);
+            }
+            catch (DirectoryNotFoundException ex)
+            {
+                return new CommandResult(false, "Error: " + ex.Message);
+            }
         }
     }
 }
-

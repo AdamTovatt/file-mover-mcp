@@ -2,133 +2,132 @@ using FileMoverMcp.Core.Commands;
 using FileMoverMcp.Core.Interfaces;
 using FileMoverMcp.Core.Models;
 using Moq;
-using Xunit;
 
-namespace FileMoverMcp.Tests.Commands;
-
-public class CommitCommandTests
+namespace FileMoverMcp.Tests.Commands
 {
-    private readonly Mock<ISessionManager> _mockSessionManager;
-    private readonly Mock<IFileOperationService> _mockFileOperationService;
-
-    public CommitCommandTests()
+    public class CommitCommandTests
     {
-        _mockSessionManager = new Mock<ISessionManager>();
-        _mockFileOperationService = new Mock<IFileOperationService>();
-    }
+        private readonly Mock<ISessionManager> _mockSessionManager;
+        private readonly Mock<IFileOperationService> _mockFileOperationService;
 
-    [Fact]
-    public async Task ExecuteAsync_WhenNoSession_ReturnsFailureResult()
-    {
-        // Arrange
-        _mockSessionManager
-            .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync((Session?)null);
+        public CommitCommandTests()
+        {
+            _mockSessionManager = new Mock<ISessionManager>();
+            _mockFileOperationService = new Mock<IFileOperationService>();
+        }
 
-        CommitCommand command = new CommitCommand(
-            _mockSessionManager.Object,
-            _mockFileOperationService.Object);
+        [Fact]
+        public async Task ExecuteAsync_WhenNoSession_ReturnsFailureResult()
+        {
+            // Arrange
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync((Session?)null);
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            CommitCommand command = new CommitCommand(
+                _mockSessionManager.Object,
+                _mockFileOperationService.Object);
 
-        // Assert
-        Assert.False(result.Success);
-        Assert.Contains("No session initialized", result.Message);
-    }
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
 
-    [Fact]
-    public async Task ExecuteAsync_WhenNoMoves_ClearsSessionAndReturnsSuccess()
-    {
-        // Arrange
-        Session session = Session.Create("C:\\TestPath");
-        _mockSessionManager
-            .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(session);
+            // Assert
+            Assert.False(result.Success);
+            Assert.Contains("No session initialized", result.Message);
+        }
 
-        CommitCommand command = new CommitCommand(
-            _mockSessionManager.Object,
-            _mockFileOperationService.Object);
+        [Fact]
+        public async Task ExecuteAsync_WhenNoMoves_ClearsSessionAndReturnsSuccess()
+        {
+            // Arrange
+            Session session = Session.Create("C:\\TestPath");
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(session);
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            CommitCommand command = new CommitCommand(
+                _mockSessionManager.Object,
+                _mockFileOperationService.Object);
 
-        // Assert
-        Assert.True(result.Success);
-        Assert.Contains("No moves to commit", result.Message);
-        _mockSessionManager.Verify(
-            x => x.CancelSessionAsync(It.IsAny<CancellationToken>()),
-            Times.Once);
-    }
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
 
-    [Fact]
-    public async Task ExecuteAsync_WhenMovesSucceed_ReturnsSuccessAndClearsSession()
-    {
-        // Arrange
-        Session session = Session.Create("C:\\TestPath");
-        session.StagedMoves.Add(new FileMove("file1.txt", "file2.txt", false));
+            // Assert
+            Assert.True(result.Success);
+            Assert.Contains("No moves to commit", result.Message);
+            _mockSessionManager.Verify(
+                x => x.CancelSessionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
 
-        _mockSessionManager
-            .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(session);
+        [Fact]
+        public async Task ExecuteAsync_WhenMovesSucceed_ReturnsSuccessAndClearsSession()
+        {
+            // Arrange
+            Session session = Session.Create("C:\\TestPath");
+            session.StagedMoves.Add(new FileMove("file1.txt", "file2.txt", false));
 
-        _mockFileOperationService
-            .Setup(x => x.ExecuteFileMoveAsync(
-                It.IsAny<FileMove>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask);
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(session);
 
-        CommitCommand command = new CommitCommand(
-            _mockSessionManager.Object,
-            _mockFileOperationService.Object);
+            _mockFileOperationService
+                .Setup(x => x.ExecuteFileMoveAsync(
+                    It.IsAny<FileMove>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            CommitCommand command = new CommitCommand(
+                _mockSessionManager.Object,
+                _mockFileOperationService.Object);
 
-        // Assert
-        Assert.True(result.Success);
-        Assert.Contains("Committed 1 move(s) successfully", result.Message);
-        Assert.NotNull(result.Details);
-        Assert.Contains("file1.txt", result.Details);
-        _mockSessionManager.Verify(
-            x => x.CancelSessionAsync(It.IsAny<CancellationToken>()),
-            Times.Once);
-    }
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
 
-    [Fact]
-    public async Task ExecuteAsync_WhenSomeMovesFail_ReturnsPartialSuccess()
-    {
-        // Arrange
-        Session session = Session.Create("C:\\TestPath");
-        session.StagedMoves.Add(new FileMove("file1.txt", "file2.txt", false));
-        session.StagedMoves.Add(new FileMove("file3.txt", "file4.txt", false));
+            // Assert
+            Assert.True(result.Success);
+            Assert.Contains("Committed 1 move(s) successfully", result.Message);
+            Assert.NotNull(result.Details);
+            Assert.Contains("file1.txt", result.Details);
+            _mockSessionManager.Verify(
+                x => x.CancelSessionAsync(It.IsAny<CancellationToken>()),
+                Times.Once);
+        }
 
-        _mockSessionManager
-            .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(session);
+        [Fact]
+        public async Task ExecuteAsync_WhenSomeMovesFail_ReturnsPartialSuccess()
+        {
+            // Arrange
+            Session session = Session.Create("C:\\TestPath");
+            session.StagedMoves.Add(new FileMove("file1.txt", "file2.txt", false));
+            session.StagedMoves.Add(new FileMove("file3.txt", "file4.txt", false));
 
-        _mockFileOperationService
-            .SetupSequence(x => x.ExecuteFileMoveAsync(
-                It.IsAny<FileMove>(),
-                It.IsAny<string>(),
-                It.IsAny<CancellationToken>()))
-            .Returns(Task.CompletedTask)
-            .ThrowsAsync(new IOException("File locked"));
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(session);
 
-        CommitCommand command = new CommitCommand(
-            _mockSessionManager.Object,
-            _mockFileOperationService.Object);
+            _mockFileOperationService
+                .SetupSequence(x => x.ExecuteFileMoveAsync(
+                    It.IsAny<FileMove>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask)
+                .ThrowsAsync(new IOException("File locked"));
 
-        // Act
-        CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+            CommitCommand command = new CommitCommand(
+                _mockSessionManager.Object,
+                _mockFileOperationService.Object);
 
-        // Assert
-        Assert.False(result.Success);
-        Assert.Contains("Completed with 1 error(s)", result.Message);
-        Assert.NotNull(result.Details);
-        Assert.Contains("Successfully moved 1 file(s)", result.Details);
-        Assert.Contains("Failed to move 1 file(s)", result.Details);
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+
+            // Assert
+            Assert.False(result.Success);
+            Assert.Contains("Completed with 1 error(s)", result.Message);
+            Assert.NotNull(result.Details);
+            Assert.Contains("Successfully moved 1 file(s)", result.Details);
+            Assert.Contains("Failed to move 1 file(s)", result.Details);
+        }
     }
 }
-

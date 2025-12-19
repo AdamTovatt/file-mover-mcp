@@ -1,75 +1,75 @@
-using System.Text.Json;
 using FileMoverMcp.Core.Interfaces;
 using FileMoverMcp.Core.Models;
+using System.Text.Json;
 
-namespace FileMoverMcp.Core.Services;
-
-/// <summary>
-/// Handles persistence of session data in the system temp directory.
-/// </summary>
-public class SessionStorage : ISessionStorage
+namespace FileMoverMcp.Core.Services
 {
-    private const string SessionFileName = "fm-session.json";
-    private readonly string _sessionFilePath;
-    private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
-    {
-        WriteIndented = true,
-        PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-    };
-
     /// <summary>
-    /// Initializes a new instance of the <see cref="SessionStorage"/> class.
+    /// Handles persistence of session data in the system temp directory.
     /// </summary>
-    public SessionStorage()
+    public class SessionStorage : ISessionStorage
     {
-        string tempPath = Path.GetTempPath();
-        _sessionFilePath = Path.Combine(tempPath, SessionFileName);
-    }
-
-    /// <inheritdoc/>
-    public async Task<Session?> LoadSessionAsync(CancellationToken cancellationToken)
-    {
-        if (!File.Exists(_sessionFilePath))
+        private const string SessionFileName = "fm-session.json";
+        private readonly string _sessionFilePath;
+        private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
         {
-            return null;
+            WriteIndented = true,
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
+        };
+
+        /// <summary>
+        /// Initializes a new instance of the <see cref="SessionStorage"/> class.
+        /// </summary>
+        public SessionStorage()
+        {
+            string tempPath = Path.GetTempPath();
+            _sessionFilePath = Path.Combine(tempPath, SessionFileName);
         }
 
-        try
+        /// <inheritdoc/>
+        public async Task<Session?> LoadSessionAsync(CancellationToken cancellationToken)
         {
-            string json = await File.ReadAllTextAsync(_sessionFilePath, cancellationToken);
-            Session? session = JsonSerializer.Deserialize<Session>(json, JsonOptions);
-            return session;
-        }
-        catch (Exception ex) when (ex is JsonException or IOException)
-        {
-            // If the session file is corrupted or unreadable, delete it
-            await DeleteSessionAsync(cancellationToken);
-            return null;
-        }
-    }
+            if (!File.Exists(_sessionFilePath))
+            {
+                return null;
+            }
 
-    /// <inheritdoc/>
-    public async Task SaveSessionAsync(Session session, CancellationToken cancellationToken)
-    {
-        string json = JsonSerializer.Serialize(session, JsonOptions);
-        await File.WriteAllTextAsync(_sessionFilePath, json, cancellationToken);
-    }
-
-    /// <inheritdoc/>
-    public Task DeleteSessionAsync(CancellationToken cancellationToken)
-    {
-        if (File.Exists(_sessionFilePath))
-        {
-            File.Delete(_sessionFilePath);
+            try
+            {
+                string json = await File.ReadAllTextAsync(_sessionFilePath, cancellationToken);
+                Session? session = JsonSerializer.Deserialize<Session>(json, JsonOptions);
+                return session;
+            }
+            catch (Exception ex) when (ex is JsonException or IOException)
+            {
+                // If the session file is corrupted or unreadable, delete it
+                await DeleteSessionAsync(cancellationToken);
+                return null;
+            }
         }
 
-        return Task.CompletedTask;
-    }
+        /// <inheritdoc/>
+        public async Task SaveSessionAsync(Session session, CancellationToken cancellationToken)
+        {
+            string json = JsonSerializer.Serialize(session, JsonOptions);
+            await File.WriteAllTextAsync(_sessionFilePath, json, cancellationToken);
+        }
 
-    /// <inheritdoc/>
-    public Task<bool> SessionExistsAsync(CancellationToken cancellationToken)
-    {
-        return Task.FromResult(File.Exists(_sessionFilePath));
+        /// <inheritdoc/>
+        public Task DeleteSessionAsync(CancellationToken cancellationToken)
+        {
+            if (File.Exists(_sessionFilePath))
+            {
+                File.Delete(_sessionFilePath);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        /// <inheritdoc/>
+        public Task<bool> SessionExistsAsync(CancellationToken cancellationToken)
+        {
+            return Task.FromResult(File.Exists(_sessionFilePath));
+        }
     }
 }
-

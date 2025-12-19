@@ -1,5 +1,10 @@
 # FileMoverMcp
 
+[![Tests](https://github.com/AdamTovatt/file-mover-mcp/actions/workflows/dotnet.yml/badge.svg)](https://github.com/AdamTovatt/file-mover-mcp/actions/workflows/dotnet.yml)
+[![NuGet Version](https://img.shields.io/nuget/v/FileMoverMcp.svg)](https://www.nuget.org/packages/FileMoverMcp)
+[![NuGet Downloads](https://img.shields.io/nuget/dt/FileMoverMcp.svg)](https://www.nuget.org/packages/FileMoverMcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+
 A file mover tool that stages and executes file moves safely. Works as both a CLI tool and an MCP (Model Context Protocol) server for AI agents.
 
 ## Features
