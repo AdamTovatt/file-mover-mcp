@@ -34,9 +34,9 @@ namespace FileMoverMcp.Cli
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>The result of the operation.</returns>
         [McpServerTool(Name = "fm_init")]
-        [Description("Initialize a new file move session at the specified path")]
+        [Description("Initialize a new file move session. Must be called before any other fm_ tool. All paths used in fm_move will be relative to the base path set here. Only one session can be active at a time.")]
         public async Task<string> InitializeSessionAsync(
-            [Description("The base directory path (optional, defaults to current directory)")]
+            [Description("The base directory path. All subsequent move operations will use paths relative to this directory. Defaults to current directory if not provided.")]
             string? path,
             CancellationToken cancellationToken)
         {
@@ -59,13 +59,13 @@ namespace FileMoverMcp.Cli
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>The result of the operation.</returns>
         [McpServerTool(Name = "fm_move")]
-        [Description("Stage a file move operation")]
+        [Description("Stage a file or directory move. Can be called multiple times to add more moves to the session before committing. The source type (file or directory) is auto-detected. Directory moves preserve the full internal structure including nested subdirectories. Destination directories that don't exist will be created automatically. Nothing is moved until fm_commit is called.")]
         public async Task<string> StageMoveAsync(
-            [Description("The source file path")]
+            [Description("Source path relative to the session base directory. Can be a file or a directory.")]
             string source,
-            [Description("The destination file path")]
+            [Description("Destination path relative to the session base directory. Parent directories will be created if they don't exist.")]
             string destination,
-            [Description("Whether to overwrite existing destination file")]
+            [Description("Set to true to replace the destination if it already exists. If false and the destination exists, the operation will be rejected.")]
             bool overwrite,
             CancellationToken cancellationToken)
         {
@@ -86,7 +86,7 @@ namespace FileMoverMcp.Cli
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>The preview of staged moves.</returns>
         [McpServerTool(Name = "fm_preview")]
-        [Description("Preview all staged file moves")]
+        [Description("Preview all staged moves before committing. Shows each move with its source, destination, and flags like [DIR] for directory moves and [OVERWRITE] for overwrites.")]
         public async Task<string> PreviewMovesAsync(CancellationToken cancellationToken)
         {
             PreviewCommand command = new PreviewCommand(_sessionManager);
@@ -100,7 +100,7 @@ namespace FileMoverMcp.Cli
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>The result of the commit operation.</returns>
         [McpServerTool(Name = "fm_commit")]
-        [Description("Execute all staged file moves and clear the session")]
+        [Description("Execute all staged moves and clear the session. This is when files and directories are actually moved. Each move reports success or failure individually. The session is cleared afterwards regardless of outcome.")]
         public async Task<string> CommitMovesAsync(CancellationToken cancellationToken)
         {
             CommitCommand command = new CommitCommand(_sessionManager, _fileOperationService);
@@ -114,7 +114,7 @@ namespace FileMoverMcp.Cli
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>The result of the cancel operation.</returns>
         [McpServerTool(Name = "fm_cancel")]
-        [Description("Cancel the current session and discard all staged moves")]
+        [Description("Cancel the current session and discard all staged moves without executing them. No files or directories will be moved.")]
         public async Task<string> CancelSessionAsync(CancellationToken cancellationToken)
         {
             CancelCommand command = new CancelCommand(_sessionManager);
@@ -128,7 +128,7 @@ namespace FileMoverMcp.Cli
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>Help text.</returns>
         [McpServerTool(Name = "fm_help")]
-        [Description("Get help information about the FileMover tool")]
+        [Description("Get detailed help information about all available FileMover commands and their usage.")]
         public async Task<string> GetHelpAsync(CancellationToken cancellationToken)
         {
             HelpCommand command = new HelpCommand();
