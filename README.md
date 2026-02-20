@@ -13,9 +13,25 @@ A file mover tool that stages and executes file moves safely. Works as both a CL
 dotnet tool install --global FileMoverMcp
 ```
 
+```bash
+dotnet tool update --global FileMoverMcp
+```
+
+```bash
+dotnet tool uninstall --global FileMoverMcp
+```
+
 After installation, the `fm` command will be available globally.
 
-To use it as an MCP tool in for example Cursor, add this to your MCP configuration:
+### MCP setup
+
+To register as an MCP tool in Claude Code:
+
+```bash
+claude mcp add filemover -- fm --mcp
+```
+
+For Cursor or other MCP clients, add this to your MCP configuration:
 
 ```json
 {
