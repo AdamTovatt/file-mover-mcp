@@ -57,11 +57,13 @@ namespace FileMoverMcp.Core.Commands
                             session.BasePath,
                             cancellationToken);
 
-                        successfulMoves.Add($"{move.SourcePath} -> {move.DestinationPath}");
+                        string dirFlag = move.IsDirectory ? " [DIR]" : "";
+                        successfulMoves.Add($"{move.SourcePath} -> {move.DestinationPath}{dirFlag}");
                     }
                     catch (Exception ex)
                     {
-                        failedMoves.Add($"{move.SourcePath} -> {move.DestinationPath}: {ex.Message}");
+                        string dirFlag = move.IsDirectory ? " [DIR]" : "";
+                        failedMoves.Add($"{move.SourcePath} -> {move.DestinationPath}{dirFlag}: {ex.Message}");
                     }
                 }
 

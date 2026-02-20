@@ -24,11 +24,12 @@ COMMANDS:
                           If a session already exists, displays error with
                           instructions to preview or cancel.
 
-  mv <source> <dest>      Stage a file move
+  mv <source> <dest>      Stage a file or directory move (auto-detected)
                           Example: fm mv ""folder1/file.txt"" ""folder2/file.txt""
+                          Example: fm mv ""folder1"" ""folder2""
 
   mv <source> <dest> --overwrite
-                          Stage a file move with overwrite permission
+                          Stage a move with overwrite permission
                           Example: fm mv ""file.txt"" ""backup.txt"" --overwrite
 
   preview                 Show all staged moves with details
@@ -45,6 +46,7 @@ EXAMPLES:
   fm init ""c:/users/adam/desktop""
   fm mv ""test1/file.png"" ""test2/file.png""
   fm mv ""test1/file2.png"" ""test1/file1.png"" --overwrite
+  fm mv ""source_folder"" ""dest_folder""
   fm preview
   fm commit
 
@@ -57,6 +59,9 @@ ERROR HANDLING:
 
   - If source file not found:
     ""Error: Source file not found: [path]""
+
+  - If source directory not found:
+    ""Error: Source directory not found: [path]""
 
   - If destination exists without --overwrite:
     ""Error: Destination exists: [path]. Use --overwrite flag to replace.""

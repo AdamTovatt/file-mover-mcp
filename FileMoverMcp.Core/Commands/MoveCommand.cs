@@ -50,8 +50,24 @@ namespace FileMoverMcp.Core.Commands
                         "Error: No session initialized. Run 'fm init' first.");
                 }
 
+                // Auto-detect whether source is a file or directory
+                bool isDirectory = false;
+                bool fileExists = await _fileOperationService.FileExistsAsync(
+                    _sourcePath, session.BasePath, cancellationToken);
+
+                if (!fileExists)
+                {
+                    bool directoryExists = await _fileOperationService.DirectoryExistsAsync(
+                        _sourcePath, session.BasePath, cancellationToken);
+
+                    if (directoryExists)
+                    {
+                        isDirectory = true;
+                    }
+                }
+
                 // Create the file move
-                FileMove fileMove = new FileMove(_sourcePath, _destinationPath, _overwrite);
+                FileMove fileMove = new FileMove(_sourcePath, _destinationPath, _overwrite, isDirectory);
 
                 // Validate the file move
                 ValidationResult validationResult = await _fileOperationService.ValidateFileMoveAsync(

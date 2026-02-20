@@ -76,5 +76,51 @@ namespace FileMoverMcp.Tests.Commands
             Assert.Contains("file2.txt", result.Details);
             Assert.Contains("[OVERWRITE]", result.Details);
         }
+        [Fact]
+        public async Task ExecuteAsync_WhenSessionHasDirectoryMove_ShowsDirIndicator()
+        {
+            // Arrange
+            Session session = Session.Create("C:\\TestPath");
+            session.StagedMoves.Add(new FileMove("dir1", "dir2", false, IsDirectory: true));
+
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(session);
+
+            PreviewCommand command = new PreviewCommand(_mockSessionManager.Object);
+
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+
+            // Assert
+            Assert.True(result.Success);
+            Assert.NotNull(result.Details);
+            Assert.Contains("[DIR]", result.Details);
+            Assert.Contains("dir1", result.Details);
+            Assert.Contains("dir2", result.Details);
+        }
+
+        [Fact]
+        public async Task ExecuteAsync_WhenSessionHasDirectoryMoveWithOverwrite_ShowsBothIndicators()
+        {
+            // Arrange
+            Session session = Session.Create("C:\\TestPath");
+            session.StagedMoves.Add(new FileMove("dir1", "dir2", true, IsDirectory: true));
+
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(session);
+
+            PreviewCommand command = new PreviewCommand(_mockSessionManager.Object);
+
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+
+            // Assert
+            Assert.True(result.Success);
+            Assert.NotNull(result.Details);
+            Assert.Contains("[DIR]", result.Details);
+            Assert.Contains("[OVERWRITE]", result.Details);
+        }
     }
 }

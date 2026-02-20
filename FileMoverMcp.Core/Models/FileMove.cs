@@ -6,6 +6,7 @@ namespace FileMoverMcp.Core.Models
     /// <param name="SourcePath">The relative path of the source file.</param>
     /// <param name="DestinationPath">The relative path of the destination file.</param>
     /// <param name="Overwrite">Indicates whether to overwrite the destination if it exists.</param>
-    public record FileMove(string SourcePath, string DestinationPath, bool Overwrite);
+    /// <param name="IsDirectory">Indicates whether this move operates on a directory rather than a single file.</param>
+    public record FileMove(string SourcePath, string DestinationPath, bool Overwrite, bool IsDirectory = false);
 
 }

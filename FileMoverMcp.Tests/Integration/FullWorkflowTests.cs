@@ -280,6 +280,170 @@ namespace FileMoverMcp.Tests.Integration
         }
 
         [Fact]
+        public async Task FullWorkflow_DirectoryMove_MovesAllFiles()
+        {
+            // Arrange - Create source directory with files
+            string sourceDir = Path.Combine(_testDirectory, "srcdir");
+            Directory.CreateDirectory(sourceDir);
+            await File.WriteAllTextAsync(Path.Combine(sourceDir, "file1.txt"), "Content 1");
+            await File.WriteAllTextAsync(Path.Combine(sourceDir, "file2.txt"), "Content 2");
+
+            // Act - Initialize session
+            InitCommand initCommand = new InitCommand(_sessionManager, _testDirectory);
+            await initCommand.ExecuteAsync(CancellationToken.None);
+
+            // Act - Stage directory move
+            MoveCommand moveCommand = new MoveCommand(
+                _sessionManager,
+                _fileOperationService,
+                "srcdir",
+                "destdir",
+                false);
+            CommandResult moveResult = await moveCommand.ExecuteAsync(CancellationToken.None);
+            Assert.True(moveResult.Success);
+
+            // Act - Preview
+            PreviewCommand previewCommand = new PreviewCommand(_sessionManager);
+            CommandResult previewResult = await previewCommand.ExecuteAsync(CancellationToken.None);
+            Assert.True(previewResult.Success);
+            Assert.NotNull(previewResult.Details);
+            Assert.Contains("[DIR]", previewResult.Details);
+
+            // Act - Commit
+            CommitCommand commitCommand = new CommitCommand(_sessionManager, _fileOperationService);
+            CommandResult commitResult = await commitCommand.ExecuteAsync(CancellationToken.None);
+            Assert.True(commitResult.Success);
+
+            // Assert - Source directory is gone, destination has all files
+            Assert.False(Directory.Exists(sourceDir));
+            string destDir = Path.Combine(_testDirectory, "destdir");
+            Assert.True(Directory.Exists(destDir));
+            Assert.True(File.Exists(Path.Combine(destDir, "file1.txt")));
+            Assert.True(File.Exists(Path.Combine(destDir, "file2.txt")));
+            Assert.Equal("Content 1", await File.ReadAllTextAsync(Path.Combine(destDir, "file1.txt")));
+            Assert.Equal("Content 2", await File.ReadAllTextAsync(Path.Combine(destDir, "file2.txt")));
+        }
+
+        [Fact]
+        public async Task FullWorkflow_DirectoryMoveWithSubdirectories_PreservesStructure()
+        {
+            // Arrange - Create source directory with nested structure
+            string sourceDir = Path.Combine(_testDirectory, "srcdir");
+            string subDir = Path.Combine(sourceDir, "sub");
+            Directory.CreateDirectory(subDir);
+            await File.WriteAllTextAsync(Path.Combine(sourceDir, "root.txt"), "Root content");
+            await File.WriteAllTextAsync(Path.Combine(subDir, "nested.txt"), "Nested content");
+
+            // Act - Init, move, commit
+            InitCommand initCommand = new InitCommand(_sessionManager, _testDirectory);
+            await initCommand.ExecuteAsync(CancellationToken.None);
+
+            MoveCommand moveCommand = new MoveCommand(
+                _sessionManager,
+                _fileOperationService,
+                "srcdir",
+                "destdir",
+                false);
+            CommandResult moveResult = await moveCommand.ExecuteAsync(CancellationToken.None);
+            Assert.True(moveResult.Success);
+
+            CommitCommand commitCommand = new CommitCommand(_sessionManager, _fileOperationService);
+            CommandResult commitResult = await commitCommand.ExecuteAsync(CancellationToken.None);
+            Assert.True(commitResult.Success);
+
+            // Assert - Nested structure preserved
+            Assert.False(Directory.Exists(sourceDir));
+            string destDir = Path.Combine(_testDirectory, "destdir");
+            Assert.True(File.Exists(Path.Combine(destDir, "root.txt")));
+            Assert.True(File.Exists(Path.Combine(destDir, "sub", "nested.txt")));
+            Assert.Equal("Root content", await File.ReadAllTextAsync(Path.Combine(destDir, "root.txt")));
+            Assert.Equal("Nested content", await File.ReadAllTextAsync(Path.Combine(destDir, "sub", "nested.txt")));
+        }
+
+        [Fact]
+        public async Task FullWorkflow_DirectoryDestinationExistsWithoutOverwrite_Fails()
+        {
+            // Arrange - Create source and destination directories
+            string sourceDir = Path.Combine(_testDirectory, "srcdir");
+            string destDir = Path.Combine(_testDirectory, "destdir");
+            Directory.CreateDirectory(sourceDir);
+            Directory.CreateDirectory(destDir);
+            await File.WriteAllTextAsync(Path.Combine(sourceDir, "file.txt"), "Content");
+
+            // Act
+            InitCommand initCommand = new InitCommand(_sessionManager, _testDirectory);
+            await initCommand.ExecuteAsync(CancellationToken.None);
+
+            MoveCommand moveCommand = new MoveCommand(
+                _sessionManager,
+                _fileOperationService,
+                "srcdir",
+                "destdir",
+                false);
+            CommandResult moveResult = await moveCommand.ExecuteAsync(CancellationToken.None);
+
+            // Assert - Fails validation
+            Assert.False(moveResult.Success);
+            Assert.Contains("Destination exists", moveResult.Message);
+            Assert.Contains("--overwrite", moveResult.Message);
+        }
+
+        [Fact]
+        public async Task FullWorkflow_DirectoryDestinationExistsWithOverwrite_Replaced()
+        {
+            // Arrange - Create source and destination directories
+            string sourceDir = Path.Combine(_testDirectory, "srcdir");
+            string destDir = Path.Combine(_testDirectory, "destdir");
+            Directory.CreateDirectory(sourceDir);
+            Directory.CreateDirectory(destDir);
+            await File.WriteAllTextAsync(Path.Combine(sourceDir, "new.txt"), "New content");
+            await File.WriteAllTextAsync(Path.Combine(destDir, "old.txt"), "Old content");
+
+            // Act
+            InitCommand initCommand = new InitCommand(_sessionManager, _testDirectory);
+            await initCommand.ExecuteAsync(CancellationToken.None);
+
+            MoveCommand moveCommand = new MoveCommand(
+                _sessionManager,
+                _fileOperationService,
+                "srcdir",
+                "destdir",
+                true);
+            CommandResult moveResult = await moveCommand.ExecuteAsync(CancellationToken.None);
+            Assert.True(moveResult.Success);
+
+            CommitCommand commitCommand = new CommitCommand(_sessionManager, _fileOperationService);
+            CommandResult commitResult = await commitCommand.ExecuteAsync(CancellationToken.None);
+            Assert.True(commitResult.Success);
+
+            // Assert - Destination replaced with source contents
+            Assert.False(Directory.Exists(sourceDir));
+            Assert.True(File.Exists(Path.Combine(destDir, "new.txt")));
+            Assert.False(File.Exists(Path.Combine(destDir, "old.txt")));
+            Assert.Equal("New content", await File.ReadAllTextAsync(Path.Combine(destDir, "new.txt")));
+        }
+
+        [Fact]
+        public async Task FullWorkflow_SourceDirectoryNotFound_Fails()
+        {
+            // Act
+            InitCommand initCommand = new InitCommand(_sessionManager, _testDirectory);
+            await initCommand.ExecuteAsync(CancellationToken.None);
+
+            MoveCommand moveCommand = new MoveCommand(
+                _sessionManager,
+                _fileOperationService,
+                "nonexistent_dir",
+                "destdir",
+                false);
+            CommandResult moveResult = await moveCommand.ExecuteAsync(CancellationToken.None);
+
+            // Assert - Neither file nor directory exists, validation catches it
+            Assert.False(moveResult.Success);
+            Assert.Contains("not found", moveResult.Message);
+        }
+
+        [Fact]
         public async Task FullWorkflow_InitTwice_Fails()
         {
             // Act - Initialize session first time

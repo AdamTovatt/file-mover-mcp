@@ -27,7 +27,7 @@
     <ToolCommandName>fm</ToolCommandName>
     <PackageOutputPath>./nupkg</PackageOutputPath>
     <PackageId>FileMoverMcp</PackageId>
-    <Version>1.0.0</Version>
+    <Version>1.1.0</Version>
     <Authors>Adam Tovatt</Authors>
     <Description>A file mover tool that stages and executes file moves safely. Works as both a CLI tool and MCP server.</Description>
     <PackageTags>mcp;file-mover;cli-tool</PackageTags>
