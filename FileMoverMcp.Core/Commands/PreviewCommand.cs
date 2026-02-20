@@ -50,8 +50,9 @@ namespace FileMoverMcp.Core.Commands
                 for (int i = 0; i < session.StagedMoves.Count; i++)
                 {
                     FileMove move = session.StagedMoves[i];
+                    string dirFlag = move.IsDirectory ? " [DIR]" : "";
                     string overwriteFlag = move.Overwrite ? " [OVERWRITE]" : "";
-                    details.AppendLine($"  {i + 1}. {move.SourcePath} -> {move.DestinationPath}{overwriteFlag}");
+                    details.AppendLine($"  {i + 1}. {move.SourcePath} -> {move.DestinationPath}{dirFlag}{overwriteFlag}");
                 }
 
                 return new CommandResult(

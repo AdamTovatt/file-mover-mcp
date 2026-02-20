@@ -129,5 +129,35 @@ namespace FileMoverMcp.Tests.Commands
             Assert.Contains("Successfully moved 1 file(s)", result.Details);
             Assert.Contains("Failed to move 1 file(s)", result.Details);
         }
+        [Fact]
+        public async Task ExecuteAsync_WhenDirectoryMoveSucceeds_ShowsDirIndicator()
+        {
+            // Arrange
+            Session session = Session.Create("C:\\TestPath");
+            session.StagedMoves.Add(new FileMove("dir1", "dir2", false, IsDirectory: true));
+
+            _mockSessionManager
+                .Setup(x => x.GetActiveSessionAsync(It.IsAny<CancellationToken>()))
+                .ReturnsAsync(session);
+
+            _mockFileOperationService
+                .Setup(x => x.ExecuteFileMoveAsync(
+                    It.IsAny<FileMove>(),
+                    It.IsAny<string>(),
+                    It.IsAny<CancellationToken>()))
+                .Returns(Task.CompletedTask);
+
+            CommitCommand command = new CommitCommand(
+                _mockSessionManager.Object,
+                _mockFileOperationService.Object);
+
+            // Act
+            CommandResult result = await command.ExecuteAsync(CancellationToken.None);
+
+            // Assert
+            Assert.True(result.Success);
+            Assert.NotNull(result.Details);
+            Assert.Contains("[DIR]", result.Details);
+        }
     }
 }

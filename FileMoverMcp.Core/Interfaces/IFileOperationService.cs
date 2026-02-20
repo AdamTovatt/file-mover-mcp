@@ -31,6 +31,18 @@ namespace FileMoverMcp.Core.Interfaces
             CancellationToken cancellationToken);
 
         /// <summary>
+        /// Checks if a directory exists at the specified path.
+        /// </summary>
+        /// <param name="path">The relative path to check.</param>
+        /// <param name="basePath">The base directory path.</param>
+        /// <param name="cancellationToken">Token to cancel the operation.</param>
+        /// <returns>True if the directory exists, false otherwise.</returns>
+        Task<bool> DirectoryExistsAsync(
+            string path,
+            string basePath,
+            CancellationToken cancellationToken);
+
+        /// <summary>
         /// Checks if a file exists at the specified path.
         /// </summary>
         /// <param name="path">The relative path to check.</param>
