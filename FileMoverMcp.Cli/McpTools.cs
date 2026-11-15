@@ -34,7 +34,7 @@ namespace FileMoverMcp.Cli
         /// <param name="cancellationToken">Cancellation token.</param>
         /// <returns>The result of the operation.</returns>
         [McpServerTool(Name = "fm_init")]
-        [Description("Initialize a new file move session. Must be called before any other fm_ tool. All paths used in fm_move will be relative to the base path set here. Only one session can be active at a time.")]
+        [Description("Initialize a new file move session. Must be called before any other fm_ tool. All paths used in fm_move will be relative to the base path set here. You have one active session at a time; other agents' sessions are separate and unaffected. The session lives only as long as this MCP server; staged moves are lost if it restarts.")]
         public async Task<string> InitializeSessionAsync(
             [Description("The base directory path. All subsequent move operations will use paths relative to this directory. Defaults to current directory if not provided.")]
             string? path,

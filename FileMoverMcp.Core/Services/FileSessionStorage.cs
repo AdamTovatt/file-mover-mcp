@@ -5,25 +5,20 @@ using System.Text.Json;
 namespace FileMoverMcp.Core.Services
 {
     /// <summary>
-    /// Handles persistence of session data in the system temp directory.
+    /// Keeps the session in a JSON file, so it survives between separate CLI invocations.
+    /// Every process using the same file shares one session.
     /// </summary>
-    public class SessionStorage : ISessionStorage
+    public class FileSessionStorage : ISessionStorage
     {
-        private const string SessionFileName = "fm-session.json";
         private readonly string _sessionFilePath;
-        private static readonly JsonSerializerOptions JsonOptions = new JsonSerializerOptions
-        {
-            WriteIndented = true,
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase,
-        };
 
         /// <summary>
-        /// Initializes a new instance of the <see cref="SessionStorage"/> class.
+        /// Initializes a new instance of the <see cref="FileSessionStorage"/> class.
         /// </summary>
-        public SessionStorage()
+        /// <param name="sessionFilePath">The file the session is kept in.</param>
+        public FileSessionStorage(string sessionFilePath)
         {
-            string tempPath = Path.GetTempPath();
-            _sessionFilePath = Path.Combine(tempPath, SessionFileName);
+            _sessionFilePath = sessionFilePath;
         }
 
         /// <inheritdoc/>
@@ -37,12 +32,12 @@ namespace FileMoverMcp.Core.Services
             try
             {
                 string json = await File.ReadAllTextAsync(_sessionFilePath, cancellationToken);
-                Session? session = JsonSerializer.Deserialize<Session>(json, JsonOptions);
-                return session;
+                return SessionJson.Deserialize(json);
             }
-            catch (Exception ex) when (ex is JsonException or IOException)
+            catch (JsonException)
             {
-                // If the session file is corrupted or unreadable, delete it
+                // A corrupt file can never load, so drop it. A read error (IOException) is left to
+                // throw: it may be temporary, and deleting would lose the staged moves.
                 await DeleteSessionAsync(cancellationToken);
                 return null;
             }
@@ -51,8 +46,9 @@ namespace FileMoverMcp.Core.Services
         /// <inheritdoc/>
         public async Task SaveSessionAsync(Session session, CancellationToken cancellationToken)
         {
-            string json = JsonSerializer.Serialize(session, JsonOptions);
-            await File.WriteAllTextAsync(_sessionFilePath, json, cancellationToken);
+            // Plain write, no temp-file-and-rename: only one person's CLI commands use this file,
+            // one at a time, and a torn file loads as corrupt and is dropped.
+            await File.WriteAllTextAsync(_sessionFilePath, SessionJson.Serialize(session), cancellationToken);
         }
 
         /// <inheritdoc/>

@@ -47,7 +47,7 @@ namespace FileMoverMcp.Core.Commands
                 {
                     return new CommandResult(
                         false,
-                        "Error: No session initialized. Run 'fm init' first.");
+                        "Error: No session initialized. Run init first.");
                 }
 
                 // Auto-detect whether source is a file or directory

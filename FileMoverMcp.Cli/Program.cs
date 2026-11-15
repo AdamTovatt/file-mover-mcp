@@ -31,7 +31,9 @@ namespace FileMoverMcp.Cli
         {
             // Set up dependency injection
             ServiceCollection services = new ServiceCollection();
-            ConfigureServices(services);
+            // Each CLI command is its own process, so the session lives in a file between them.
+            string sessionFilePath = Path.Combine(Path.GetTempPath(), "fm-session.json");
+            ConfigureServices(services, new FileSessionStorage(sessionFilePath));
             ServiceProvider serviceProvider = services.BuildServiceProvider();
 
             try
@@ -66,17 +68,18 @@ namespace FileMoverMcp.Cli
         {
             try
             {
-                HostApplicationBuilder builder = Host.CreateApplicationBuilder(args);
+                // Empty builder: the default one loads appsettings.json with reload-on-change, which
+                // watches the whole working directory recursively (one inotify watch per folder).
+                HostApplicationBuilder builder = Host.CreateEmptyApplicationBuilder(settings: null);
 
                 // Configure logging to stderr
-                builder.Logging.ClearProviders();
                 builder.Logging.AddConsole(options =>
                 {
                     options.LogToStandardErrorThreshold = LogLevel.Trace;
                 });
 
-                // Register services
-                ConfigureServices(builder.Services);
+                // Each agent runs its own server process, so an in-memory session is per agent.
+                ConfigureServices(builder.Services, new InMemorySessionStorage());
 
                 // Configure MCP server
                 builder.Services
@@ -99,10 +102,10 @@ namespace FileMoverMcp.Cli
             }
         }
 
-        private static void ConfigureServices(IServiceCollection services)
+        private static void ConfigureServices(IServiceCollection services, ISessionStorage sessionStorage)
         {
             // Register core services
-            services.AddSingleton<ISessionStorage, SessionStorage>();
+            services.AddSingleton(sessionStorage);
             services.AddSingleton<ISessionManager, SessionManager>();
             services.AddSingleton<IFileOperationService, FileOperationService>();
             services.AddSingleton<ICommandFactory, CommandFactory>();

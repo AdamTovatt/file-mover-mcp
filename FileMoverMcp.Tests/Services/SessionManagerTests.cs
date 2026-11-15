@@ -197,5 +197,37 @@ namespace FileMoverMcp.Tests.Services
             // Assert
             Assert.False(result);
         }
+
+        [Fact]
+        public async Task AddFileMoveAsync_WhenCalledConcurrently_KeepsEveryMove()
+        {
+            // Arrange
+            // A load that pauses lets every call read the session before any call saves,
+            // so without serialization all but one move would be lost.
+            InMemorySessionStorage storage = new InMemorySessionStorage();
+            Mock<ISessionStorage> slowStorage = new Mock<ISessionStorage>();
+            slowStorage
+                .Setup(x => x.LoadSessionAsync(It.IsAny<CancellationToken>()))
+                .Returns(async (CancellationToken ct) =>
+                {
+                    Session? session = await storage.LoadSessionAsync(ct);
+                    await Task.Delay(20, ct);
+                    return session;
+                });
+            slowStorage
+                .Setup(x => x.SaveSessionAsync(It.IsAny<Session>(), It.IsAny<CancellationToken>()))
+                .Returns((Session session, CancellationToken ct) => storage.SaveSessionAsync(session, ct));
+            await storage.SaveSessionAsync(Session.Create("/base"), CancellationToken.None);
+            SessionManager sessionManager = new SessionManager(slowStorage.Object);
+            int moveCount = 10;
+
+            // Act
+            await Task.WhenAll(Enumerable.Range(0, moveCount).Select(i =>
+                sessionManager.AddFileMoveAsync(new FileMove($"{i}.txt", $"moved/{i}.txt", false), CancellationToken.None)));
+
+            // Assert
+            Session result = (await storage.LoadSessionAsync(CancellationToken.None))!;
+            Assert.Equal(moveCount, result.StagedMoves.Count);
+        }
     }
 }

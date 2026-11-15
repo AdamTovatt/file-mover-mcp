@@ -52,10 +52,10 @@ EXAMPLES:
 
 ERROR HANDLING:
   - If no session exists when running mv/preview/commit/cancel:
-    ""Error: No session initialized. Run 'fm init' first.""
+    ""Error: No session initialized. Run init first.""
 
   - If session already exists when running init:
-    ""Error: Session already active at [path]. Use 'fm preview' to review or 'fm cancel' to discard.""
+    ""Error: Session already active at [path]. Use preview to review it or cancel to discard it.""
 
   - If source file not found:
     ""Error: Source file not found: [path]""

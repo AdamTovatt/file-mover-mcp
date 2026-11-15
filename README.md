@@ -97,9 +97,9 @@ If the destination already exists (file or directory), the move will be rejected
 
 All paths are relative to the session's base directory. Attempting to reference paths outside it will be rejected.
 
-### Sessions are shared
+### Sessions are separate per mode
 
-CLI and MCP mode share the same session storage, so you can initialize a session in one mode and commit in the other.
+Each MCP server (one per agent) keeps its own session in memory, and it ends when the server stops. The CLI keeps its session in a temp file between commands. CLI and MCP sessions never see each other.
 
 ## As MCP Server
 

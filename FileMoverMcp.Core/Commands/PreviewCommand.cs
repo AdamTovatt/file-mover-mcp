@@ -30,7 +30,7 @@ namespace FileMoverMcp.Core.Commands
                 {
                     return new CommandResult(
                         false,
-                        "Error: No session initialized. Run 'fm init' first.");
+                        "Error: No session initialized. Run init first.");
                 }
 
                 if (session.StagedMoves.Count == 0)

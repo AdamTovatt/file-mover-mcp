@@ -16,7 +16,7 @@ namespace FileMoverMcp.Tests.Integration
             _testDirectory = Path.Combine(Path.GetTempPath(), $"FileMoverTest_{Guid.NewGuid()}");
             Directory.CreateDirectory(_testDirectory);
 
-            _sessionStorage = new SessionStorage();
+            _sessionStorage = new InMemorySessionStorage();
             _sessionManager = new SessionManager(_sessionStorage);
             _fileOperationService = new FileOperationService();
         }
@@ -28,9 +28,6 @@ namespace FileMoverMcp.Tests.Integration
             {
                 Directory.Delete(_testDirectory, true);
             }
-
-            // Clean up any session file
-            Task.Run(async () => await _sessionStorage.DeleteSessionAsync(CancellationToken.None)).Wait();
         }
 
         [Fact]
