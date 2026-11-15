@@ -9,6 +9,8 @@ A file mover tool that stages and executes file moves safely. Works as both a CL
 
 ## Installation
 
+Requires the .NET 10 SDK or runtime.
+
 ```bash
 dotnet tool install --global FileMoverMcp
 ```
@@ -136,6 +138,15 @@ To package:
 ```bash
 dotnet pack FileMoverMcp.Cli/FileMoverMcp.Cli.csproj --configuration Release
 ```
+
+The package is written to `FileMoverMcp.Cli/bin/nupkg/`.
+
+## Releasing
+
+1. Bump `<Version>` in `FileMoverMcp.Cli/FileMoverMcp.Cli.csproj` and commit it to master.
+2. Push a tag named after that version: `git tag vX.Y.Z && git push origin vX.Y.Z`.
+
+The Release workflow checks that the tag matches `<Version>`, builds, runs the tests and publishes the package to NuGet.
 
 ## License
 

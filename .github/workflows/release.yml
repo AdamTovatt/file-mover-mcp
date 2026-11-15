@@ -1,0 +1,69 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    # id-token: write lets NuGet/login exchange GitHub's OIDC token for a short-lived
+    # nuget.org API key through the trusted publishing policy, so no long-lived key is stored.
+    permissions:
+      contents: read
+      id-token: write
+
+    # The only lines that differ between repos sharing this workflow.
+    env:
+      PROJECT: FileMoverMcp.Cli
+      PACKAGE_ID: FileMoverMcp
+
+    steps:
+    - uses: actions/checkout@v6
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+
+    # The csproj <Version> is the single source of truth; the tag must match it. The build
+    # deliberately does not pass -p:Version. The tag name is read from GITHUB_REF_NAME in the
+    # shell, never interpolated with ${{ }}, so a crafted tag name cannot inject commands.
+    - name: Verify csproj version matches tag
+      run: |
+        VERSION="${GITHUB_REF_NAME#v}"
+        CSPROJ="$PROJECT/$PROJECT.csproj"
+        CSPROJ_VERSION=$(grep -oP '(?<=<Version>)[^<]+' "$CSPROJ")
+        if [ "$CSPROJ_VERSION" != "$VERSION" ]; then
+          echo "::error::Tag version $VERSION does not match $CSPROJ <Version> $CSPROJ_VERSION. Bump <Version> before tagging."
+          exit 1
+        fi
+
+    - name: Restore
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test --configuration Release --no-build --verbosity normal
+
+    # Right before the push: the key this returns lives for about an hour.
+    - name: Log in to NuGet through trusted publishing
+      id: nuget-login
+      uses: NuGet/login@v1
+      with:
+        user: AdamTovatt
+
+    # No --skip-duplicate: pushing a version that is already published should fail the run,
+    # not turn it green without publishing anything.
+    - name: Push to NuGet
+      env:
+        NUGET_API_KEY: ${{ steps.nuget-login.outputs.NUGET_API_KEY }}
+      run: |
+        VERSION="${GITHUB_REF_NAME#v}"
+        dotnet nuget push "$PROJECT/bin/nupkg/$PACKAGE_ID.$VERSION.nupkg" \
+          --source https://api.nuget.org/v3/index.json \
+          --api-key "$NUGET_API_KEY"
